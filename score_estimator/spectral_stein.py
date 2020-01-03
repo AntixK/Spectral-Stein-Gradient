@@ -43,17 +43,25 @@ class SpectralSteinEstimator(BaseScoreEstimator):
                                 xm: Tensor = None) -> Tensor:
         """
         Computes the Spectral Stein Gradient Estimate (SSGE) for the
-        score function.
-        :param x: (Tensor)
-        :param xm: (Tensor
-        :return:
+        score function. The SSGE is given by
+
+        .. math::
+            \nabla_{xi} phi_j(x) = \frac{1}{\mu_j M} \sum_{m=1}^M \nabla_{xi}k(x,x^m) \phi_j(x^m)
+
+            \beta_{ij} = -\frac{1}{M} \sum_{m=1}^M \nabla_{xi} phi_j (x^m)
+
+            \g_i(x) = \sum_{j=1}^J \beta_{ij} \phi_j(x)
+
+        :param x: (Tensor) [N x D]
+        :param xm: (Tensor) [M x D]
+        :return: gradient estimate [N x D]
         """
         if xm is None:
             xm = x
+        sigma = 3
+        M = torch.tensor(xm.size(-2), dtype=torch.float)
 
-        M = torch.tensor(torch.size(x)[-2], dtype=torch.float)
-
-        Kxx, dKxx_dx1, dKxx_dx2 = self.grad_gram(x, x, sigma)
+        Kxx, dKxx_dx, _ = self.grad_gram(xm, xm, sigma)
 
         if self.eta is not None:
             Kxx += self.eta * torch.eye(M)
@@ -62,8 +70,18 @@ class SpectralSteinEstimator(BaseScoreEstimator):
 
         phi_x = self.nystrom_method(x, xm, eigen_vecs, eigen_vals, sigma)
 
-        # Monte-Carlo estimate of the gradient expectation
-        dKxx_dx1_avg = dKxx_dx1.mean(dim = -3)
+        # Compute the Monte Carlo estimate of the gradient of
+        # the eigenfunction at x
+        dKxx_dx_avg = dKxx_dx.mean(dim=-3)
+        mu = eigen_vals[:, 0].unsqueeze(-1) / torch.sqrt(M)
+        #
+        # beta1 = - torch.sqrt(M) * eigen_vecs.t() @ dKxx_dx_avg
+        # beta1 *= (1. / eigen_vals[:, 0].unsqueeze(-1))
+        #
 
+        beta = - eigen_vecs.t() @ dKxx_dx_avg
+        beta *= (1. / mu)
 
-
+        # assert beta.allclose(beta1), f"incorrect computation {beta - beta1}"
+        g = phi_x @ beta
+        return g
