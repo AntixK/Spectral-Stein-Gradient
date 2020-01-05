@@ -3,7 +3,7 @@ import unittest
 from score_estimator import BaseScoreEstimator
 
 
-class Test_gram_grad(unittest.TestCase):
+class Test_gram(unittest.TestCase):
 
     def setUp(self) -> None:
         self.score_est = BaseScoreEstimator()
@@ -18,7 +18,7 @@ class Test_gram_grad(unittest.TestCase):
 
         assert Kxx.allclose(Kxx.t()), "Kernel matrix not symmetric"
 
-    def test_gram_gram(self):
+    def test_gram_grad(self):
         x1 = torch.rand((5, 10), requires_grad=True)
         x2 = torch.rand((4, 10), requires_grad=True)
 
@@ -27,6 +27,18 @@ class Test_gram_grad(unittest.TestCase):
         assert dKxx_dx1.size() == (5,4,10), "In correct x1_grad computation"
         assert dKxx_dx2.size() == (5,4,10), "In correct x2_grad computation"
 
+    def test_heusristic_kw(self):
+
+        x1 = torch.rand((5, 10), requires_grad=True)
+        x2 = torch.rand((4, 10), requires_grad=True)
+
+        self.score_est.heuristic_sigma(x1, x2)
+
 
 if __name__ == '__main__':
+    # import numpy as np
+    # s = np.random.randn(1, 4)
+    # x = np.random.randn(5, 3)
+    # print(np.shape(x)[-2])
+    # print(np.reshape(s, np.shape(x)[:-2]))
     unittest.main()

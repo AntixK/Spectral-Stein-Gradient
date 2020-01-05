@@ -51,6 +51,33 @@ class BaseScoreEstimator:
             dKxx_dx2 = Kxx.unsqueeze(-1) * diff
             return Kxx, dKxx_dx1, dKxx_dx2
 
+    def heuristic_sigma(self,
+                        x:Tensor,
+                        xm: Tensor) -> Tensor:
+        """
+        Uses the median-heuristic for selecting the
+        appropriate sigma for the RBF kernel based
+        on the given samples.
+        The kernel width is set to the media of the
+        pairwise distances between x and xm.
+        :param x: (Tensor) [N x D]
+        :param xm: (Tensor) [M x D]
+        :return:
+        """
+        N = x.size(-2)
+        M = xm.size(-2)
+        x1 = x.unsqueeze(-2)   # Make it into a column tensor
+        x2 = xm.unsqueeze(-3)  # Make it into a row tensor
+
+
+        pdist_mat = torch.sqrt(((x1 - x2) ** 2).sum(dim = -1)) # [N x M]
+
+        kernel_width = torch.median(torch.flatten(pdist_mat))
+        return kernel_width
+
     @abstractmethod
-    def compute_score_gradients(self, x: Tensor, xm: Tensor):
+    def compute_score_gradients(self, x: Tensor, xm: Tensor = None):
         raise NotImplementedError
+
+    def __call__(self, x: Tensor, xm: Tensor = None):
+        return self.compute_score_gradients(x, xm)

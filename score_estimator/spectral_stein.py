@@ -4,8 +4,11 @@ from .base import BaseScoreEstimator
 
 
 class SpectralSteinEstimator(BaseScoreEstimator):
-    def __init__(self, eta: float = None) -> None:
+    def __init__(self,
+                 eta: float = None,
+                 num_eigs: int = None) -> None:
         self.eta = eta
+        self.num_eigs = num_eigs
 
     def nystrom_method(self,
                        x: Tensor,
@@ -52,36 +55,42 @@ class SpectralSteinEstimator(BaseScoreEstimator):
 
             \g_i(x) = \sum_{j=1}^J \beta_{ij} \phi_j(x)
 
-        :param x: (Tensor) [N x D]
-        :param xm: (Tensor) [M x D]
+        :param x: (Tensor) Point at which the gradient is evaluated [N x D]
+        :param xm: (Tensor) Samples for the kernel [M x D]
         :return: gradient estimate [N x D]
         """
         if xm is None:
             xm = x
-        sigma = 3
+            sigma = self.heuristic_sigma(xm, xm)
+        else:
+            # Account for the new data points too
+            _xm = torch.cat((x, xm), dim=-2)
+            sigma = self.heuristic_sigma(_xm, _xm)
+
         M = torch.tensor(xm.size(-2), dtype=torch.float)
 
         Kxx, dKxx_dx, _ = self.grad_gram(xm, xm, sigma)
 
         if self.eta is not None:
-            Kxx += self.eta * torch.eye(M)
+            Kxx += self.eta * torch.eye(xm.size(-2))
 
         eigen_vals, eigen_vecs = torch.eig(Kxx, eigenvectors=True)
 
-        phi_x = self.nystrom_method(x, xm, eigen_vecs, eigen_vals, sigma)
+        if self.num_eigs is not None:
+            eigen_vals = eigen_vals[:self.num_eigs]
+            eigen_vecs = eigen_vecs[:, :self.num_eigs]
+
+        phi_x = self.nystrom_method(x, xm, eigen_vecs, eigen_vals, sigma) # [N x M]
 
         # Compute the Monte Carlo estimate of the gradient of
         # the eigenfunction at x
-        dKxx_dx_avg = dKxx_dx.mean(dim=-3)
-        mu = eigen_vals[:, 0].unsqueeze(-1) / torch.sqrt(M)
-        #
-        # beta1 = - torch.sqrt(M) * eigen_vecs.t() @ dKxx_dx_avg
-        # beta1 *= (1. / eigen_vals[:, 0].unsqueeze(-1))
-        #
+        dKxx_dx_avg = dKxx_dx.mean(dim=-3) #[M x D]
 
-        beta = - eigen_vecs.t() @ dKxx_dx_avg
-        beta *= (1. / mu)
+
+        beta = - torch.sqrt(M) * eigen_vecs.t() @ dKxx_dx_avg
+        beta *= (1. / eigen_vals[:, 0].unsqueeze(-1))
+
 
         # assert beta.allclose(beta1), f"incorrect computation {beta - beta1}"
-        g = phi_x @ beta
+        g = phi_x @ beta # [N x D]
         return g
