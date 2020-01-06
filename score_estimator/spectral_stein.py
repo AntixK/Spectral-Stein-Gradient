@@ -71,6 +71,7 @@ class SpectralSteinEstimator(BaseScoreEstimator):
 
         Kxx, dKxx_dx, _ = self.grad_gram(xm, xm, sigma)
 
+        # Kxx = Kxx + eta * I
         if self.eta is not None:
             Kxx += self.eta * torch.eye(xm.size(-2))
 
@@ -86,10 +87,8 @@ class SpectralSteinEstimator(BaseScoreEstimator):
         # the eigenfunction at x
         dKxx_dx_avg = dKxx_dx.mean(dim=-3) #[M x D]
 
-
         beta = - torch.sqrt(M) * eigen_vecs.t() @ dKxx_dx_avg
         beta *= (1. / eigen_vals[:, 0].unsqueeze(-1))
-
 
         # assert beta.allclose(beta1), f"incorrect computation {beta - beta1}"
         g = phi_x @ beta # [N x D]

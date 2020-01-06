@@ -3,7 +3,6 @@ from all_types import *
 from abc import abstractmethod
 
 
-
 class BaseScoreEstimator:
 
     @staticmethod
@@ -64,16 +63,14 @@ class BaseScoreEstimator:
         :param xm: (Tensor) [M x D]
         :return:
         """
-        N = x.size(-2)
-        M = xm.size(-2)
-        x1 = x.unsqueeze(-2)   # Make it into a column tensor
-        x2 = xm.unsqueeze(-3)  # Make it into a row tensor
 
+        with torch.no_grad():
+            x1 = x.unsqueeze(-2)   # Make it into a column tensor
+            x2 = xm.unsqueeze(-3)  # Make it into a row tensor
 
-        pdist_mat = torch.sqrt(((x1 - x2) ** 2).sum(dim = -1)) # [N x M]
-
-        kernel_width = torch.median(torch.flatten(pdist_mat))
-        return kernel_width
+            pdist_mat = torch.sqrt(((x1 - x2) ** 2).sum(dim = -1)) # [N x M]
+            kernel_width = torch.median(torch.flatten(pdist_mat))
+            return kernel_width
 
     @abstractmethod
     def compute_score_gradients(self, x: Tensor, xm: Tensor = None):

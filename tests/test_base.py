@@ -36,9 +36,4 @@ class Test_gram(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # import numpy as np
-    # s = np.random.randn(1, 4)
-    # x = np.random.randn(5, 3)
-    # print(np.shape(x)[-2])
-    # print(np.reshape(s, np.shape(x)[:-2]))
     unittest.main()
