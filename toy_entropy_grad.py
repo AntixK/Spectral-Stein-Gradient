@@ -1,6 +1,7 @@
 import torch
 import torch.distributions as dist
 from gradient_estimators import EntropyGradient
+from score_estimator import SpectralSteinEstimator
 from all_types import *
 import matplotlib.pyplot as plt
 plt.style.use("seaborn")
@@ -15,44 +16,51 @@ class ToyEntropyGrad:
 
         self.q = q
         self.M = num_samples
-        self.grad_estimator = EntropyGradient(eta, num_eigs)
+        self.grad_estimator =  EntropyGradient(eta=eta, num_eigs=num_eigs)
 
-    def run(self, x: Tensor) -> List[Tensor]:
+    def run(self,
+            x: Tensor,
+            x_grad: Tensor) -> List[Tensor]:
+        """
 
-        x.requires_grad = True
-        samples = self.q.sample((self.M, ))
+        :param x: (Tensor) Data samples from the q distribution
+                  or a one that mimics its samples
+        :param x_grad: (Tensor) Gradient of those samples with
+                       respect to its transformation parameters
+        :return:
+        """
+        log_prob = q.log_prob(x)
+        l = log_prob.sum()
+        true_score = torch.autograd.grad(l, x)[0]
 
-        log_prob = torch.exp(self.q.log_prob(x)).sum()
-        log_prob.backward()
-        x_grad = x.grad
+        true_dH = true_score * x_grad
+        true_dH = -true_dH.mean()
 
-        grad_entropy = self.grad_estimator(x, x_grad, samples)
-
-        entropy = self.q.entropy()
-        entropy.backward()
-        true_grad_entropy = self.q.probs.grad
-        print(true_grad_entropy)
-        # print(grad_entropy)
+        dH = self.grad_estimator(x, x_grad)
+        print("True Entropy Gradient:", true_dH)
+        print("Estimated Entropy Gradient:", dH)
 
 
 if __name__ == '__main__':
-    torch.manual_seed(1234)
-    x = torch.randint(0,2, (10, 1)).view(-1, 1).float()
+    # torch.manual_seed(1234)
+    M = 100
+    N = 1000
 
-    M = 10
-    eta = 0.0095
-    l = torch.tensor([.12])
-    l.requires_grad = True
-    q = dist.Bernoulli(l)
+    LB = -5
+    UB = 5
+    z = (LB - UB) * torch.rand(N, 1) + UB
+    z.requires_grad = True
 
-    # e = q.entropy()
-    # e.backward()
-    # print(l.grad)
-    #
-    # print(1./l)
+    theta = torch.tensor([1.0])
 
-    exp = ToyEntropyGrad(q, M, eta=eta)
-    exp.run(x)
+    x = z * theta
+    l = x.sum()
+    x_grad = torch.autograd.grad(l, z)[0]
 
 
+    eta = 0.95
+    q = dist.StudentT(torch.tensor([5.0]))
+
+    exp = ToyEntropyGrad(q, M, None, eta=eta)
+    exp.run(x, x_grad)
 

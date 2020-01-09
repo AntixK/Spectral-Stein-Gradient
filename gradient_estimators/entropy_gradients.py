@@ -1,3 +1,4 @@
+import torch
 from all_types import *
 from score_estimator import SpectralSteinEstimator
 
@@ -14,35 +15,41 @@ class EntropyGradient:
                           x: Tensor,
                           x_grad: Tensor,
                           samples: Tensor = None) -> Tensor:
-        """
 
-        :param x: (Tensor) [N x C x H x W]
-        :param x_grad: (Tensor) [N x C x H x W]
-        :param samples: (Tensor) [M x C x H x W]
-        :return: [N x C x H x W]
+        """
+        Computes the gradient of the entropy with respect to the
+        model that produced the samples x that mimics the samples
+        from some modelling distribution q, from a prior
+        distribution p(z). The gradient of the entropy is given by
+        .. math::
+            x = g_\theta(z), z \sim p(z)
+            \nabla_\theta H(q) = - \nabla E_z [\nabla_x \log q(x) \nabla_theta g_\theta(z)]
+
+        :param x: (Tensor) Data samples from the q distribution
+                  or a one that mimics its samples. [N x D]
+        :param x_grad: (Tensor) Gradient of those samples with
+                       respect to its transformation parameters
+        :param samples: (Tensor) Samples from the distribution q
+                        This is optional. [N x D]
+        :return: (Tensor) Gradient of the entropy
         """
         N  = x.size(0)
-
-        if samples is not None:
-            M = samples.size(0)
-        else:
-            samples = x
-            M = N
 
         # Flatten the vectors
         x = x.view(N, -1) # [N x CHW]
         x_grad = x_grad.view(N, -1) #[N x CHW]
-        samples = samples.view(M, -1) # [M x CHW]
 
-        score = self.score_estimator(x, samples) #[N x CHW]
+        with torch.no_grad():
+            score = self.score_estimator(x, samples) #[N x CHW]
 
-        grad_entropy = -(score * x_grad).mean(dim=-2) # Element-wise multiplication
-        return grad_entropy #.view(N, C, H, W)
+        grad_entropy = -(score * x_grad).mean() # Element-wise multiplication
+
+        return grad_entropy
 
     def __call__(self,
                  x: Tensor,
                  x_grad: Tensor,
-                 samples: Tensor):
+                 samples: Tensor = None):
 
         return self.compute_gradients(x, x_grad, samples)
 
