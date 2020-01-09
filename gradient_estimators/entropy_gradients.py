@@ -14,7 +14,8 @@ class EntropyGradient:
     def compute_gradients(self,
                           x: Tensor,
                           x_grad: Tensor,
-                          samples: Tensor = None) -> Tensor:
+                          samples: Tensor = None,
+                          return_score = False) -> Tensor:
 
         """
         Computes the gradient of the entropy with respect to the
@@ -44,12 +45,16 @@ class EntropyGradient:
 
         grad_entropy = -(score * x_grad).mean() # Element-wise multiplication
 
-        return grad_entropy
+        if return_score:
+            return [grad_entropy, score]
+        else:
+            return grad_entropy
 
     def __call__(self,
                  x: Tensor,
                  x_grad: Tensor,
-                 samples: Tensor = None):
+                 samples: Tensor = None,
+                 return_score = False):
 
-        return self.compute_gradients(x, x_grad, samples)
+        return self.compute_gradients(x, x_grad, samples, return_score)
 

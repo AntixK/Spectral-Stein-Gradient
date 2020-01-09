@@ -29,6 +29,7 @@ class ToyScoreEstimator:
         l.backward()
         true_dlog_q_dx = x.grad.detach()
 
+
         samples = self.q.sample((self.M,))
 
         dlog_q_dx = self.score_estimator(x, samples)
@@ -36,7 +37,7 @@ class ToyScoreEstimator:
         return [log_q_x.detach(), true_dlog_q_dx, dlog_q_dx.detach()]
 
 if __name__ == '__main__':
-    torch.manual_seed(1234)
+    # torch.manual_seed(1234)
 
     LB = -5
     UB = 5
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     # q = dist.Exponential(torch.tensor([1.0]))
     # q = dist.LogNormal(torch.tensor([0.0]), torch.tensor([1.0]))
     # q = dist.Gamma(torch.tensor([1.0]), torch.tensor([1.0]))
-    q = dist.StudentT(torch.tensor([5.0]))
+    # q = dist.StudentT(torch.tensor([5.0]))
     exp = ToyScoreEstimator(q, M, None, eta = eta)
     lik_func, score, est_score = exp.run(x)
 

@@ -29,38 +29,28 @@ class ToyEntropyGrad:
                        respect to its transformation parameters
         :return:
         """
-        log_prob = q.log_prob(x)
-        l = log_prob.sum()
-        true_score = torch.autograd.grad(l, x)[0]
 
-        true_dH = true_score * x_grad
-        true_dH = -true_dH.mean()
-
-        dH = self.grad_estimator(x, x_grad)
-        print("True Entropy Gradient:", true_dH)
-        print("Estimated Entropy Gradient:", dH)
+        dH, score = self.grad_estimator(x, x_grad, return_score = True)
+        return dH
 
 
 if __name__ == '__main__':
     # torch.manual_seed(1234)
     M = 100
-    N = 1000
+    N = 100
 
-    LB = -5
-    UB = 5
-    z = (LB - UB) * torch.rand(N, 1) + UB
-    z.requires_grad = True
+    z = torch.linspace(-5,5, 150).view(-1, 1)
 
-    theta = torch.tensor([1.0])
+    mu = torch.tensor([1.0])
+    sigma = torch.tensor([1.75])
 
-    x = z * theta
+    x = z * mu + sigma
     l = x.sum()
-    x_grad = torch.autograd.grad(l, z)[0]
+    x_grad = z
 
-
-    eta = 0.95
-    q = dist.StudentT(torch.tensor([5.0]))
+    eta = 0.0095
+    q = dist.Normal(torch.tensor([1.0]), torch.tensor([0.75]))
 
     exp = ToyEntropyGrad(q, M, None, eta=eta)
-    exp.run(x, x_grad)
-
+    dH = exp.run(x, x_grad)
+    print("Estimated Entropy Gradient:", dH.item())
