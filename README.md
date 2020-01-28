@@ -2,21 +2,20 @@
 Pytorch implementation of the paper *A Spectral Approach to Gradient Estimation for Implicit Distributions* 
 (https://arxiv.org/abs/1806.02925) by Shi et. al.
 
+
 ### Toy Experiments
 
-<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Gaussian.png" align="left" height="380" width="410" >
+<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Gaussian.png" align="left" height="380" width="410"/>
 
-<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Cauchy.png" align="right" height="380" width="410" >
+<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Cauchy.png" align="right" height="380" width="410"/>
 
-<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Student T.png" align="left" height="380" width="410" >
+<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/Student T.png" align="left" height="380" width="410"/>
 
-<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/LogNormal.png" align="right" height="380" width="410" >
+<img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/LogNormal.png" align="right" height="380" width="410"/>
 
-<br>
+-------------------------------------------------------------------------------------------------------------------------
 
-<h3>
-  <b>Usage</b><br>
-</h3>
+### Usage
 
 ```python
 latent_z = torch.randn((100, 1))
