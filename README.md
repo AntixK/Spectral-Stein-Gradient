@@ -12,9 +12,11 @@ Pytorch implementation of the paper *A Spectral Approach to Gradient Estimation 
 
 <img src="https://github.com/AntixK/Spectral-Stein-Gradient/blob/master/assets/LogNormal.png" align="left" height="380" width="410" >
 
- <br>
+<br>
 
-### Usage
+<h3>
+  <b>Usage</b><br>
+</h3>
 
 ```python
 latent_z = torch.randn((100, 1))
